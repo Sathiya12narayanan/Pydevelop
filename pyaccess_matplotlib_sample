@@ -1,0 +1,121 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import psycopg2
+#using matplotlib library we can extract the data by pandas library
+#To visualize data from PostgreSQL pgAdmin using Matplotlib, you'll need to first extract the data into a Pandas DataFrame and then use Matplotlib to create the visualization.
+
+def connect_to_postgresql(database_name, user, password, host, port):
+    """Connects to a PostgreSQL database using provided credentials.
+
+    Args:
+        database_name (str): Name of the database.
+        user (str): Username for the database.
+        password (str): Password for the database.
+        host (str): Host address of the database server.
+        port (int): Port number of the database server.
+
+    Returns:
+        psycopg2.extensions.connection: A connection object to the PostgreSQL database.
+
+    Raises:
+        psycopg2.OperationalError: If there's a problem connecting to the database.
+    """
+
+    try:
+        conn = psycopg2.connect(
+            dbname=database_name,
+            user=user,
+            password=password,
+            host=host,
+            port=port
+        )
+        return conn
+    except psycopg2.OperationalError as e:
+        print(f"Error connecting to PostgreSQL: {e}")
+        raise
+
+def read_data_from_table(conn, table_name):
+    """Reads data from a specified table in the PostgreSQL database.
+
+    Args:
+        conn (psycopg2.extensions.connection): Connection object to the PostgreSQL database.
+        table_name (str): Name of the table to read data from.
+
+    Returns:
+        pandas.DataFrame: A Pandas DataFrame containing the data from the table.
+
+    Raises:
+        psycopg2.ProgrammingError: If there's a problem executing the SQL query.
+    """
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT * FROM {table_name}")
+            columns = [desc[0] for desc in cur.description]
+            data = cur.fetchall()
+            df = pd.DataFrame(data, columns=columns)
+            return df
+    except psycopg2.ProgrammingError as e:
+        print(f"Error reading data from table: {e}")
+        raise
+
+def visualize_data(df, x_column, y_column, chart_type='line'):
+    """Visualizes the data in the DataFrame using the specified chart type.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data.
+        x_column (str): Name of the column to use for the X-axis.
+        y_column (str): Name of the column to use for the Y-axis.
+        chart_type (str): Type of chart to create (options: 'line', 'bar', 'scatter', 'pie').
+    """
+
+    if chart_type == 'line':
+        plt.plot(df[x_column], df[y_column])
+        plt.xlabel(x_column)
+        plt.ylabel(y_column)
+        plt.title(f"{x_column} vs. {y_column}")
+    elif chart_type == 'bar':
+        plt.bar(df[x_column], df[y_column])
+        plt.xlabel(x_column)
+        plt.ylabel(y_column)
+        plt.title(f"{x_column} vs. {y_column}")
+    elif chart_type == 'scatter':
+        plt.scatter(df[x_column], df[y_column])
+        plt.xlabel(x_column)
+        plt.ylabel(y_column)
+        plt.title(f"{x_column} vs. {y_column}")
+    elif chart_type == 'pie':
+        plt.pie(df[y_column], labels=df[x_column])
+        plt.title(f"Distribution of {y_column}")
+    else:
+        print("Invalid chart type. Please choose 'line', 'bar', 'scatter', or 'pie'.")
+
+    plt.show()
+
+def main():
+    # Replace with your PostgreSQL credentials and table name
+    database_name = "test"
+    user = "postgres"
+    password = "postgres"
+    host = "localhost"
+    port = "5432"
+    table_name = "student"
+
+    try:
+        conn = connect_to_postgresql(database_name, user, password, host, port)
+        df = read_data_from_table(conn, table_name)
+
+        # Choose the chart type and columns to visualize
+        chart_type = 'line'  # Replace with 'bar', 'scatter', or 'pie' as needed
+        x_column = 'column_name_for_x_axis'
+        y_column = 'column_name_for_y_axis'
+
+        visualize_data(df, x_column, y_column, chart_type)
+
+        # Close the database connection
+        conn.close()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
